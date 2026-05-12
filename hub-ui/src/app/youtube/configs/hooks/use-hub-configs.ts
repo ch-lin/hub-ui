@@ -18,6 +18,7 @@ export const hubConfigSchema = z.object({
   quotaSafetyThreshold: z.coerce.number().min(0, "Must be >= 0"),
   apiCallDelay: z.coerce.number().min(0, "Must be >= 0"),
   activeVideosSyncDays: z.coerce.number().min(1, "Must be >= 1"),
+  maxThumbnailRetries: z.coerce.number().min(0, "Must be >= 0").max(10, "Must be <= 10").default(3),
   autoStartFetchScheduler: z.boolean().default(false),
   schedulerType: z.string().default('FIXED_RATE'),
   fixedRate: z.coerce.number().nullish().transform(v => v ?? 86400000),
@@ -133,7 +134,8 @@ export function useHubConfigs() {
       quota: 10000,
       quotaSafetyThreshold: 500,
       apiCallDelay: 100,
-      activeVideosSyncDays: 30
+      activeVideosSyncDays: 30,
+      maxThumbnailRetries: 3
     });
   };
 

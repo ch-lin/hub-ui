@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useState, memo, useRef, forwardRef } from "react";
+import { useState, useEffect, memo, useRef, forwardRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Copy, Download, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,6 +58,43 @@ const DesktopVideoRow = memo(
     setHoveredThumbnail,
       "data-index": dataIndex,
     }, ref) {
+
+    const getTargetUrl = () => {
+      if (item.resolvedThumbnailUrl && item.thumbnailStatus === "DOWNLOADED") {
+        const isAbsoluteUrl = /^https?:\/\//i.test(item.resolvedThumbnailUrl);
+        if (!isAbsoluteUrl) {
+          const cleanPath = item.resolvedThumbnailUrl.startsWith('/') ? item.resolvedThumbnailUrl : `/${item.resolvedThumbnailUrl}`;
+          return `/api${cleanPath}`;
+        }
+        return item.resolvedThumbnailUrl;
+      }
+      return item.thumbnailUrl;
+    };
+
+    // Prefer local image file, fallback to YouTube original URL if no local file is available
+    const [imgSrc, setImgSrc] = useState<string>(getTargetUrl());
+
+    // Synchronize imgSrc when the virtual scroll reuses the row component or fetches new data
+    useEffect(() => {
+      const targetUrl = getTargetUrl();
+      
+      console.debug(`[Desktop] Video ${item.videoId} thumbnail evaluation:`, {
+        isLocal: targetUrl !== item.thumbnailUrl,
+        status: item.thumbnailStatus,
+        targetUrl
+      });
+      
+      setImgSrc(targetUrl);
+    }, [item.resolvedThumbnailUrl, item.thumbnailStatus, item.thumbnailUrl]);
+
+    // Fallback if local image fails to load (e.g., backend returns 404)
+    const handleError = () => {
+      if (imgSrc !== item.thumbnailUrl) {
+        console.warn(`[Desktop] Failed to load local thumbnail for video ${item.videoId}. Falling back to YouTube URL.`);
+        setImgSrc(item.thumbnailUrl);
+      }
+    };
+
     return (
       <TableRow ref={ref} data-index={dataIndex} className="group transition-colors hover:bg-muted/50">
         <TableCell className="font-medium text-sm">
@@ -65,10 +102,18 @@ const DesktopVideoRow = memo(
         </TableCell>
         <TableCell>
           <div className="w-[100px] h-[75px] cursor-pointer rounded overflow-hidden border border-border shadow-sm" 
-               onMouseEnter={(e) => setHoveredThumbnail({ url: item.thumbnailUrl, x: e.clientX, y: e.clientY })} 
-               onMouseMove={(e) => setHoveredThumbnail({ url: item.thumbnailUrl, x: e.clientX, y: e.clientY })} 
+               onMouseEnter={(e) => setHoveredThumbnail({ url: imgSrc, x: e.clientX, y: e.clientY })} 
+               onMouseMove={(e) => setHoveredThumbnail({ url: imgSrc, x: e.clientX, y: e.clientY })} 
                onMouseLeave={() => setHoveredThumbnail(null)}>
-            <Image src={item.thumbnailUrl} alt="Thumb" width={100} height={75} className="object-cover" />
+            <Image 
+              src={imgSrc} 
+              alt="Thumb" 
+              width={100} 
+              height={75} 
+              className="object-cover" 
+              onError={handleError} 
+              unoptimized
+            />
           </div>
         </TableCell>
         <TableCell>
@@ -183,7 +228,7 @@ export function DesktopVideoTable({
       {/* Enlarged thumbnail on mouse hover */}
       {hoveredThumbnail && (
         <div className="hidden md:block fixed z-50 pointer-events-none transition-transform duration-200" style={{ top: hoveredThumbnail.y + 15, left: hoveredThumbnail.x + 15 }}>
-          <Image src={hoveredThumbnail.url.replace("maxresdefault", "hqdefault")} alt="Thumbnail" width={480} height={360} className="rounded-lg shadow-2xl border-2 border-white" />
+          <Image src={hoveredThumbnail.url.replace("maxresdefault", "hqdefault")} alt="Thumbnail" width={480} height={360} className="rounded-lg shadow-2xl border-2 border-white" unoptimized />
         </div>
       )}
 

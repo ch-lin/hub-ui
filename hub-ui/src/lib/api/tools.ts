@@ -9,4 +9,13 @@ export const toolApi = {
   
   // 3. Verify URLs
   verifyUrls: (urls: string[]) => apiFetch("/tasks/verification", { method: "POST", body: JSON.stringify({ urls }) }),
+
+  // 4. Get thumbnail synchronization status
+  getThumbnailStatus: () => apiFetch("/tasks/sync-thumbnails", { method: "GET" }),
+  
+  // 5. Start thumbnail synchronization background job
+  syncThumbnails: () => apiFetch("/tasks/sync-thumbnails", { method: "POST" }),
+  
+  // 6. Reset unavailable thumbnails to PENDING
+  resetUnavailableThumbnails: (videoIds?: string[]) => apiFetch("/tasks/reset-unavailable-thumbnails", { method: "PATCH", body: JSON.stringify({ videoIds }) }),
 };

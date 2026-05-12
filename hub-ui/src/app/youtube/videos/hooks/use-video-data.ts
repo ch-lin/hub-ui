@@ -26,6 +26,9 @@ export interface Item {
   channelId: string;
   channelTitle: string;
   thumbnailUrl: string;
+  localThumbnailPath?: string;
+  resolvedThumbnailUrl?: string;
+  thumbnailStatus?: string;
   status: ProcessingStatus;
 }
 
