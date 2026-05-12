@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { memo, useRef } from "react";
+import { useState, useEffect, memo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Download, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -47,15 +47,56 @@ const MobileVideoCard = memo(
     onStatusChange,
     onDownload,
   }: MobileVideoCardProps) {
+
+    // Mobile version prefers higher quality fallback
+    const fallbackUrl = item.thumbnailUrl.replace("maxresdefault", "hqdefault");
+
+    const getTargetUrl = () => {
+      if (item.resolvedThumbnailUrl && item.thumbnailStatus === "DOWNLOADED") {
+        const isAbsoluteUrl = /^https?:\/\//i.test(item.resolvedThumbnailUrl);
+        if (!isAbsoluteUrl) {
+          const cleanPath = item.resolvedThumbnailUrl.startsWith('/') ? item.resolvedThumbnailUrl : `/${item.resolvedThumbnailUrl}`;
+          return `/api${cleanPath}`;
+        }
+        return item.resolvedThumbnailUrl;
+      }
+      return fallbackUrl;
+    };
+
+    const [imgSrc, setImgSrc] = useState<string>(getTargetUrl());
+
+    // Synchronize imgSrc when the virtual scroll reuses the component or fetches new data
+    useEffect(() => {
+      const targetUrl = getTargetUrl();
+      
+      console.debug(`[Mobile] Video ${item.videoId} thumbnail evaluation:`, {
+        isLocal: targetUrl !== fallbackUrl,
+        status: item.thumbnailStatus,
+        targetUrl
+      });
+      
+      setImgSrc(targetUrl);
+    }, [item.resolvedThumbnailUrl, item.thumbnailStatus, fallbackUrl]);
+
+    // Fallback if local image fails to load (e.g., backend returns 404)
+    const handleError = () => {
+      if (imgSrc !== fallbackUrl) {
+        console.warn(`[Mobile] Failed to load local thumbnail for video ${item.videoId}. Falling back to YouTube URL.`);
+        setImgSrc(fallbackUrl);
+      }
+    };
+
     return (
       <Card className="overflow-hidden flex flex-col">
         <div className="relative w-full aspect-video bg-muted">
           <Image 
-            src={item.thumbnailUrl.replace("maxresdefault", "hqdefault")} 
+            src={imgSrc} 
             alt="Thumbnail" 
             fill 
             sizes="(max-width: 640px) 100vw, 50vw"
             className="object-cover" 
+            onError={handleError}
+            unoptimized
           />
           <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded shadow-sm backdrop-blur-sm font-mono tracking-wider">
             {item.videoId}

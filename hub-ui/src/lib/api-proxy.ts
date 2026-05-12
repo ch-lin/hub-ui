@@ -27,6 +27,7 @@ const pathToServerMapping: { regex: RegExp; server: ResourceServer; rewrite?: (p
   { regex: /^\/api\/channels(\/.*)?$/, server: "youtube-hub" },
   { regex: /^\/api\/items(\/.*)?$/, server: "youtube-hub" },
   { regex: /^\/api\/tags(\/.*)?$/, server: "youtube-hub" },
+  { regex: /^\/api\/thumbnails(\/.*)?$/, server: "youtube-hub" },
   // downloader-tool backend paths
   { regex: /^\/api\/configs(\/.*)?$/, server: "downloader-tool" },
   { regex: /^\/api\/download(\/.*)?$/, server: "downloader-tool" },

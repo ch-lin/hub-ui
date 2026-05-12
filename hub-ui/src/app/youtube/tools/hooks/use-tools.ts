@@ -7,13 +7,34 @@ export function useTools() {
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResettingThumbnails, setIsResettingThumbnails] = useState(false);
+  const [isStartingSync, setIsStartingSync] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     newUrls: string | null;
     undownloaded: string | null;
     error: string | null;
   } | null>(null);
+  const [thumbnailStatus, setThumbnailStatus] = useState({
+    isRunning: false,
+    pendingCount: 0,
+    failedCount: 0,
+    totalCount: 0,
+  });
+
+  const fetchThumbnailStatus = async () => {
+    try {
+      const response = await toolApi.getThumbnailStatus();
+      if (response?.data) {
+        setThumbnailStatus(response.data);
+      }
+    } catch (err) {
+      console.error("[Tools Tracking] Error fetching thumbnail status:", err);
+    }
+  };
 
   useEffect(() => {
+    fetchThumbnailStatus();
+
     const handleFocus = async () => {
       try {
         if (!document.hasFocus()) return;
@@ -126,8 +147,51 @@ export function useTools() {
     }
   };
 
+  const handleResetFailedThumbnails = async () => {
+    setIsResettingThumbnails(true);
+    console.info("[Tools Tracking] Action: Attempting to reset unavailable thumbnails...");
+    const toastId = toast.loading("Resetting unavailable thumbnails...");
+    const startTime = performance.now();
+    try {
+      const result = await toolApi.resetUnavailableThumbnails();
+      toast.success(`Successfully reset ${result?.data?.resetItems || 0} thumbnails to PENDING.`, { id: toastId });
+      console.info(`[Tools Tracking] Reset thumbnails success in ${(performance.now() - startTime).toFixed(0)}ms. Reset items: ${result?.data?.resetItems || 0}`);
+      await fetchThumbnailStatus();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+      toast.error(`Failed to reset thumbnails: ${errorMessage}`, { id: toastId });
+      console.error("[Tools Tracking] Error resetting thumbnails:", err);
+    } finally {
+      setIsResettingThumbnails(false);
+    }
+  };
+
+  const handleStartThumbnailSync = async () => {
+    setIsStartingSync(true);
+    console.info("[Tools Tracking] Action: Attempting to start thumbnail sync job...");
+    const toastId = toast.loading("Starting thumbnail sync job...");
+    const startTime = performance.now();
+    try {
+      const result = await toolApi.syncThumbnails();
+      // The API returns 202 Accepted or 200 OK with a message
+      toast.success(result?.data || "Background thumbnail sync job started.", { id: toastId });
+      console.info(`[Tools Tracking] Sync thumbnails started in ${(performance.now() - startTime).toFixed(0)}ms.`);
+      await fetchThumbnailStatus();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+      toast.error(`Failed to start thumbnail sync: ${errorMessage}`, { id: toastId });
+      console.error("[Tools Tracking] Error starting thumbnail sync:", err);
+    } finally {
+      setIsStartingSync(false);
+    }
+  };
+
   return {
-    urlsToVerify, setUrlsToVerify, isMarkingDone, isDeleting, isVerifying, verificationResult,
-    handleMarkAllDone, handleDeleteAllData, handleVerifyUrls
+    urlsToVerify, setUrlsToVerify,
+    isMarkingDone, isDeleting, isVerifying,
+    isResettingThumbnails, isStartingSync,
+    verificationResult, thumbnailStatus,
+    handleMarkAllDone, handleDeleteAllData, handleVerifyUrls,
+    handleResetFailedThumbnails, handleStartThumbnailSync, fetchThumbnailStatus
   };
 }

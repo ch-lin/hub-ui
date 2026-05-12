@@ -178,6 +178,10 @@ export function HubConfigPanel({
               <Input type="number" {...register('activeVideosSyncDays')} />
               {errors.activeVideosSyncDays && <p className="text-xs text-destructive mt-1">{errors.activeVideosSyncDays.message}</p>}
             </Field>
+          <Field label="Max Thumbnail Retries">
+            <Input type="number" {...register('maxThumbnailRetries')} />
+            {errors.maxThumbnailRetries && <p className="text-xs text-destructive mt-1">{errors.maxThumbnailRetries.message}</p>}
+          </Field>
 
             <div className="col-span-1 md:col-span-2 border-t border-border my-2"></div>
 
