@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { Copy } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 import { Pagination } from "./components/pagination";
 import { DesktopVideoTable } from "./components/desktop-video-table";
@@ -37,6 +47,9 @@ export default function Home() {
     downloadingItems,
     isFetching,
     isMarkingDone,
+    showFailureModal,
+    setShowFailureModal,
+    failureDetailsData,
     handleRefresh,
     handleMarkAllDone,
     handleFetch,
@@ -65,6 +78,21 @@ export default function Home() {
       const errorMessage = "Failed to copy URL to clipboard.";
       toast.error(errorMessage);
       console.error(`[Videos Tracking] ${errorMessage}`, err);
+    });
+  };
+
+  const handleCopyFailures = () => {
+    if (failureDetailsData.length === 0) return;
+
+    const textToCopy = failureDetailsData
+      .map(f => `${f.channelTitle}: ${f.reason || 'Unknown error'}`)
+      .join('\n');
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      toast.success("All failure reasons copied to clipboard!");
+    }).catch(err => {
+      toast.error("Failed to copy failure reasons.");
+      console.error("Failed to copy failure reasons:", err);
     });
   };
 
@@ -137,6 +165,38 @@ export default function Home() {
           onPrevPage={handlePrevPage} 
         />
       )}
+
+      {/* Fetch Failures Dialog */}
+      <Dialog open={showFailureModal} onOpenChange={setShowFailureModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Fetch Failure Details</DialogTitle>
+            <DialogDescription>
+              The following channels could not be processed. See details below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto pr-4">
+            <ul className="space-y-3">
+              {failureDetailsData.map((failure, index) => (
+                <li key={index} className="rounded-md border p-3">
+                  <p className="font-semibold text-primary">{failure.channelTitle}</p>
+                  {failure.reason && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Reason: {failure.reason}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCopyFailures}>
+              <Copy className="mr-2 h-4 w-4" />
+              Copy All Reasons
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

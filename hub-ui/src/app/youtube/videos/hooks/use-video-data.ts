@@ -37,6 +37,11 @@ export interface Channel {
   title: string;
 }
 
+export interface FetchFailure {
+  channelTitle: string;
+  reason?: string;
+}
+
 interface UseVideoDataProps {
   viewMode: "available" | "upcoming" | "all" | "deleted";
   selectedChannel: string;
@@ -66,6 +71,8 @@ export function useVideoData({
   const [isFetching, setIsFetching] = useState(false);
   const [isMarkingDone, setIsMarkingDone] = useState(false);
   const [channels, setChannels] = useState<Channel[]>([]);
+  const [showFailureModal, setShowFailureModal] = useState(false);
+  const [failureDetailsData, setFailureDetailsData] = useState<FetchFailure[]>([]);
 
   useEffect(() => {
     const fetchChannels = async () => {
@@ -200,12 +207,44 @@ export function useVideoData({
         liveVideoCount = 0,
         updatedItemsCount = 0,
         processedChannels = 0,
-        failures = [],
+        failures = [] as FetchFailure[],
       } = result.data || {};
 
       if (failures.length > 0) {
         const failureCount = failures.length;
-        toast.warning(`Fetch completed with ${failureCount} failure(s). Check logs for details.`);
+        const failedChannelNames = failures.map((f: FetchFailure) => f.channelTitle).filter(Boolean);
+        let failureDetails = '';
+
+        if (failedChannelNames.length > 0) {
+          if (failedChannelNames.length <= 3) {
+            failureDetails = `Failed to process: ${failedChannelNames.join(", ")}.`;
+          } else {
+            failureDetails = `Failed to process: ${failedChannelNames.slice(0, 2).join(", ")} and ${failedChannelNames.length - 2} more.`;
+          }
+        }
+
+        const toastAction = failedChannelNames.length > 3 ? {
+          label: 'Show Details',
+          onClick: () => {
+            setFailureDetailsData(failures);
+            setShowFailureModal(true);
+          }
+        } : undefined;
+
+        if (processedChannels > 0) {
+          // Partial failure
+          const successMessage = `Fetch partially complete. Processed ${processedChannels} channel(s).`;
+          toast.warning(`${successMessage} ${failureDetails}`, { 
+            duration: 10000,
+            action: toastAction
+          });
+        } else {
+          // Total failure
+          toast.error(`Fetch failed. ${failureDetails || `Processed 0 channels with ${failureCount} failure(s).`}`, { 
+            duration: 10000,
+            action: toastAction
+          });
+        }
         console.warn("[Videos Tracking] Fetch failures:", failures);
       } else {
         let message;
@@ -319,6 +358,9 @@ export function useVideoData({
     downloadingItems,
     isFetching,
     isMarkingDone,
+    showFailureModal,
+    setShowFailureModal,
+    failureDetailsData,
     handleRefresh,
     handleMarkAllDone,
     handleFetch,
