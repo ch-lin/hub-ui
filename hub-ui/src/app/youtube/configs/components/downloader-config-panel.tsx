@@ -160,12 +160,16 @@ export function DownloaderConfigPanel({
             </Field>
 
             <Field label="Duration">
-              <Input type="number" {...register('duration')} />
+              <Input type="number" {...register('duration')} onWheel={(e) => (e.target as HTMLInputElement).blur()} />
               {errors.duration && <p className="text-xs text-destructive mt-1">{errors.duration.message}</p>}
             </Field>
             <Field label="Thread Pool Size">
-              <Input type="number" {...register('threadPoolSize')} />
+              <Input type="number" {...register('threadPoolSize')} onWheel={(e) => (e.target as HTMLInputElement).blur()} />
               {errors.threadPoolSize && <p className="text-xs text-destructive mt-1">{errors.threadPoolSize.message}</p>}
+            </Field>
+            <Field label="Max Queue Size">
+              <Input type="number" {...register('maxQueueSize')} onWheel={(e) => (e.target as HTMLInputElement).blur()} />
+              {errors.maxQueueSize && <p className="text-xs text-destructive mt-1">{errors.maxQueueSize.message}</p>}
             </Field>
 
             <div className="col-span-1 md:col-span-2 border-t border-border my-2">
@@ -178,7 +182,7 @@ export function DownloaderConfigPanel({
             </Field>
             <Field label="Format Sorting"><Input {...register('ytDlpConfig.formatSorting')} className="font-mono" /></Field>
 
-            <Field label="Output Template"><Input {...register('ytDlpConfig.outputTemplate')} className="font-mono" /></Field>
+            <Field label="Remux Video"><Input {...register('ytDlpConfig.remuxVideo')} className="font-mono" /></Field>
             <Controller control={control} name="ytDlpConfig.overwrite" render={({ field }) => (
               <Field label="Overwrite Files">
                 <Select value={field.value || 'DEFAULT'} onValueChange={field.onChange}>
@@ -202,13 +206,21 @@ export function DownloaderConfigPanel({
             <Field label="Subtitle Language"><Input {...register('ytDlpConfig.subLang')} className="font-mono" /></Field>
             <Field label="Subtitle Format"><Input {...register('ytDlpConfig.subFormat')} className="font-mono" /></Field>
 
-            <Field label="Remux Video"><Input {...register('ytDlpConfig.remuxVideo')} className="font-mono" /></Field>
-            <div className="flex flex-wrap gap-6">
-              <Controller control={control} name="ytDlpConfig.keepVideo" render={({ field }) => (<CheckboxField label="Keep Video File"><Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} /></CheckboxField>)} />
+            <Field label="Output Template" colSpan={2}><Input {...register('ytDlpConfig.outputTemplate')} className="font-mono" /></Field>
+
+            <div>
               <Controller control={control} name="ytDlpConfig.extractAudio" render={({ field }) => (<CheckboxField label="Extract Audio"><Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} /></CheckboxField>)} />
             </div>
+            <div>
+              <Controller control={control} name="ytDlpConfig.keepVideo" render={({ field }) => (<CheckboxField label="Keep Intermediate Video"><Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} /></CheckboxField>)} />
+            </div>
+
             <Field label="Audio Format"><Input {...register('ytDlpConfig.audioFormat')} className="font-mono" /></Field>
-            <Field label="Audio Quality"><Input type="number" {...register('ytDlpConfig.audioQuality')} /></Field>
+            <Field label="Audio Quality"><Input type="number" {...register('ytDlpConfig.audioQuality')} onWheel={(e) => (e.target as HTMLInputElement).blur()} /></Field>
+
+            <Field label="Sleep Interval (sec)"><Input type="number" {...register('ytDlpConfig.sleepInterval')} onWheel={(e) => (e.target as HTMLInputElement).blur()} /></Field>
+            <Field label="Max Sleep Interval (sec)"><Input type="number" {...register('ytDlpConfig.maxSleepInterval')} onWheel={(e) => (e.target as HTMLInputElement).blur()} /></Field>
+            <Field label="Sleep Subtitles (sec)"><Input type="number" {...register('ytDlpConfig.sleepSubtitles')} onWheel={(e) => (e.target as HTMLInputElement).blur()} /></Field>
 
             <div className="md:col-span-2">
               <Controller control={control} name="ytDlpConfig.useCookie" render={({ field }) => (<CheckboxField label="Use Netscape Cookie File"><Checkbox checked={field.value ?? false} onCheckedChange={field.onChange} /></CheckboxField>)} />

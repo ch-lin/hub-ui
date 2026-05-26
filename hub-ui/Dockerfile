@@ -15,6 +15,12 @@ FROM base AS builder
 # Copy package files and install dependencies with pnpm
 COPY package.json pnpm-lock.yaml* ./
 
+# Auto-generate pnpm-workspace.yaml to approve build scripts without polluting local repo
+RUN echo "allowBuilds:" > pnpm-workspace.yaml && \
+    echo "  msw: true" >> pnpm-workspace.yaml && \
+    echo "  sharp: true" >> pnpm-workspace.yaml && \
+    echo "  unrs-resolver: true" >> pnpm-workspace.yaml
+
 # Install dependencies
 RUN pnpm install
 

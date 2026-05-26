@@ -17,6 +17,7 @@ export const downloaderConfigSchema = z.object({
   clientId: z.string().nullish().transform(v => v ?? ''),
   clientSecret: z.string().nullish().transform(v => v ?? ''),
   threadPoolSize: z.coerce.number().min(1, "Thread pool size must be at least 1"),
+  maxQueueSize: z.coerce.number().min(1, "Max queue size must be at least 1"),
   ytDlpConfig: z.object({
     name: z.string().nullish().transform(v => v ?? ''),
     formatFiltering: z.string().min(1, "Format filtering is required"),
@@ -36,6 +37,9 @@ export const downloaderConfigSchema = z.object({
     cookie: z.string().nullish().transform(v => v ?? ''),
     noProgress: z.boolean().default(true),
     useCookie: z.boolean().default(false),
+    sleepInterval: z.coerce.number().min(0, "Must be >= 0").nullish(),
+    maxSleepInterval: z.coerce.number().min(0, "Must be >= 0").nullish(),
+    sleepSubtitles: z.coerce.number().min(0, "Must be >= 0").nullish(),
   })
 });
 
@@ -122,6 +126,7 @@ export function useDownloaderConfigs() {
       clientId: '',
       clientSecret: '',
       threadPoolSize: 3,
+      maxQueueSize: 50,
       ytDlpConfig: {
         name: '',
         formatFiltering: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
@@ -141,6 +146,9 @@ export function useDownloaderConfigs() {
         audioQuality: 0,
         cookie: '',
         useCookie: false,
+        sleepInterval: 5,
+        maxSleepInterval: 15,
+        sleepSubtitles: 2,
       }
     });
   };
