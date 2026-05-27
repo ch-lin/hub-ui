@@ -5,6 +5,7 @@ import { Check, Copy, Download, RefreshCw } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Item, ProcessingStatus } from "../page";
 import {
   AlertDialog,
@@ -153,27 +154,45 @@ const DesktopVideoRow = memo(
           </Select>
         </TableCell>
         <TableCell className="text-center">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant={item.status === 'DOWNLOADED' ? 'secondary' : 'default'} className="shadow-sm" disabled={isDownloading}>
-                {isDownloading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Download Video</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to download "{item.title}"?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={() => onDownload(item.videoId, item.title)}>
-                  Download
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <div className={item.status === 'PENDING' ? 'inline-block cursor-help' : 'inline-block'}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        size="sm" 
+                        variant={item.status === 'DOWNLOADED' ? 'secondary' : 'default'} 
+                        className={`shadow-sm ${isDownloading || ['PENDING', 'DOWNLOADING', 'DELETED', 'IGNORE'].includes(item.status) ? 'pointer-events-none' : ''}`} 
+                        disabled={isDownloading || ['PENDING', 'DOWNLOADING', 'DELETED', 'IGNORE'].includes(item.status)}
+                      >
+                        {isDownloading || ['PENDING', 'DOWNLOADING'].includes(item.status) ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Download Video</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to download "{item.title}"?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDownload(item.videoId, item.title)}>
+                          Download
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </TooltipTrigger>
+              {item.status === 'PENDING' && (
+                <TooltipContent>
+                  <p>Task is already in the queue</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </TableCell>
       </TableRow>
     );
