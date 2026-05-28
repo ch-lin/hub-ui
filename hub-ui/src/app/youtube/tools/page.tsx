@@ -17,11 +17,13 @@ export default function ToolsPage() {
     thumbnailStatus,
     isStartingSync,
     isResettingThumbnails,
+    isIgnoringThumbnails,
     handleMarkAllDone,
     handleDeleteAllData,
     handleVerifyUrls,
     handleStartThumbnailSync,
     handleResetFailedThumbnails,
+    handleIgnorePendingThumbnails,
     fetchThumbnailStatus,
   } = useTools();
 
@@ -32,8 +34,10 @@ export default function ToolsPage() {
           status={thumbnailStatus}
           isStartingSync={isStartingSync}
           isResetting={isResettingThumbnails}
+          isIgnoring={isIgnoringThumbnails}
           onStartSync={handleStartThumbnailSync}
           onResetFailed={handleResetFailedThumbnails}
+          onIgnorePending={handleIgnorePendingThumbnails}
           onRefreshStatus={fetchThumbnailStatus}
         />
         <MarkAllDoneTool

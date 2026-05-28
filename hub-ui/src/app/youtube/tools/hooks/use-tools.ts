@@ -9,6 +9,7 @@ export function useTools() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResettingThumbnails, setIsResettingThumbnails] = useState(false);
   const [isStartingSync, setIsStartingSync] = useState(false);
+  const [isIgnoringThumbnails, setIsIgnoringThumbnails] = useState(false);
   const [verificationResult, setVerificationResult] = useState<{
     newUrls: string | null;
     undownloaded: string | null;
@@ -186,12 +187,32 @@ export function useTools() {
     }
   };
 
+  const handleIgnorePendingThumbnails = async () => {
+    setIsIgnoringThumbnails(true);
+    console.info("[Tools Tracking] Action: Attempting to ignore all pending thumbnails...");
+    const toastId = toast.loading("Ignoring pending thumbnails...");
+    const startTime = performance.now();
+    try {
+      const result = await toolApi.ignoreAllPendingThumbnails();
+      toast.success(`Successfully ignored ${result?.data?.ignoredItems || 0} pending thumbnails.`, { id: toastId });
+      console.info(`[Tools Tracking] Ignore pending thumbnails success in ${(performance.now() - startTime).toFixed(0)}ms. Ignored items: ${result?.data?.ignoredItems || 0}`);
+      await fetchThumbnailStatus();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred.";
+      toast.error(`Failed to ignore pending thumbnails: ${errorMessage}`, { id: toastId });
+      console.error("[Tools Tracking] Error ignoring pending thumbnails:", err);
+    } finally {
+      setIsIgnoringThumbnails(false);
+    }
+  };
+
   return {
     urlsToVerify, setUrlsToVerify,
     isMarkingDone, isDeleting, isVerifying,
     isResettingThumbnails, isStartingSync,
+    isIgnoringThumbnails,
     verificationResult, thumbnailStatus,
     handleMarkAllDone, handleDeleteAllData, handleVerifyUrls,
-    handleResetFailedThumbnails, handleStartThumbnailSync, fetchThumbnailStatus
+    handleResetFailedThumbnails, handleStartThumbnailSync, handleIgnorePendingThumbnails, fetchThumbnailStatus
   };
 }

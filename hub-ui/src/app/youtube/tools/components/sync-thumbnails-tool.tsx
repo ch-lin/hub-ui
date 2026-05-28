@@ -1,4 +1,4 @@
-import { ImageIcon, Play, RefreshCw, RotateCcw } from "lucide-react";
+import { ImageIcon, Play, RefreshCw, RotateCcw, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -21,8 +21,10 @@ interface SyncThumbnailsToolProps {
   };
   isStartingSync: boolean;
   isResetting: boolean;
+  isIgnoring: boolean;
   onStartSync: () => void;
   onResetFailed: () => void;
+  onIgnorePending: () => void;
   onRefreshStatus: () => void;
 }
 
@@ -30,8 +32,10 @@ export function SyncThumbnailsTool({
   status,
   isStartingSync,
   isResetting,
+  isIgnoring,
   onStartSync,
   onResetFailed,
+  onIgnorePending,
   onRefreshStatus,
 }: SyncThumbnailsToolProps) {
   return (
@@ -88,6 +92,42 @@ export function SyncThumbnailsTool({
           {isResetting ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <RotateCcw className="h-4 w-4 mr-2" />}
           Reset Failed to Pending
         </Button>
+      </div>
+
+      {/* Danger Zone */}
+      <div className="mt-6 pt-5 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="text-sm">
+          <span className="font-semibold text-destructive flex items-center gap-1 mb-1">
+            <Ban className="h-4 w-4" /> Danger Zone
+          </span>
+          <span className="text-muted-foreground">Mark all pending thumbnails as IGNORED to skip downloading.</span>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground sm:w-auto w-full"
+              disabled={isIgnoring || status.pendingCount === 0 || status.isRunning}
+            >
+              {isIgnoring ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <Ban className="h-4 w-4 mr-2" />}
+              {isIgnoring ? "Ignoring..." : "Ignore All Pending"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ignore all pending thumbnails?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will change the status of all currently <span className="font-medium">PENDING</span> thumbnails to <span className="font-medium">IGNORED</span>. The system will skip downloading them in the future.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={onIgnorePending} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Yes, Ignore All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
