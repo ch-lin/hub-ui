@@ -41,4 +41,11 @@ export const videoApi = {
 
   // 6. Update single video processing status
   updateItemStatus: (videoId: string, status: string) => apiFetch(`/items/${videoId}`, { method: "PATCH", body: JSON.stringify({ status }) }),
+
+  // 7. Get lightweight item statuses for background polling
+  getItemStatuses: (videoIds: string[]) => {
+    const params = new URLSearchParams();
+    videoIds.forEach((id) => params.append("videoIds", id));
+    return apiFetch(`/items/statuses?${params.toString()}`);
+  },
 };
