@@ -124,6 +124,21 @@ export function useVideoData({
           setTotalPages(data.totalPages);
           setTotalItems(data.totalElements);
         }
+
+        // Auto-detect items that are currently processing and add them to the polling queue
+        const activeStatuses: ProcessingStatus[] = ["PENDING", "DOWNLOADING"];
+        const activeIds: string[] = data.content
+          .filter((i: Item) => activeStatuses.includes(i.status))
+          .map((i: Item) => i.videoId);
+        
+        if (activeIds.length > 0) {
+          setDownloadingItems((prev) => {
+            const newSet = new Set(prev);
+            activeIds.forEach((id: string) => newSet.add(id));
+            return newSet;
+          });
+        }
+
         console.info(`[Videos Tracking] Successfully fetched ${data.content.length} video items in ${(performance.now() - startTime).toFixed(0)}ms.`);
 
         if (isManualRefresh) {
@@ -145,6 +160,65 @@ export function useVideoData({
   useEffect(() => {
     fetchItems(viewMode, selectedChannel, currentPage, itemsPerPage);
   }, [fetchItems, viewMode, selectedChannel, currentPage, itemsPerPage]);
+
+  // Background Polling Engine
+  useEffect(() => {
+    if (downloadingItems.size === 0) return;
+
+    let isMounted = true;
+    const activeStatuses: ProcessingStatus[] = ["PENDING", "DOWNLOADING"];
+
+    const pollStatuses = async () => {
+      if (!isMounted || downloadingItems.size === 0) return;
+
+      try {
+        const videoIds = Array.from(downloadingItems);
+        const statusesMap = await videoApi.getItemStatuses(videoIds);
+
+        const completedIds: string[] = [];
+        let hasChanges = false;
+
+        setItems((prevItems) => {
+          const newItems = prevItems.map((item) => {
+            const newStatus = statusesMap[item.videoId] as ProcessingStatus;
+            if (newStatus) {
+              // If it reached a terminal state (not PENDING or DOWNLOADING)
+              if (!activeStatuses.includes(newStatus)) {
+                completedIds.push(item.videoId);
+              }
+              // Optimistic or real state change
+              if (newStatus !== item.status) {
+                hasChanges = true;
+                return { ...item, status: newStatus };
+              }
+            }
+            return item;
+          });
+          return hasChanges ? newItems : prevItems;
+        });
+
+        // Graceful stop: Remove finished items from the polling queue
+        if (completedIds.length > 0) {
+          setDownloadingItems((prev) => {
+            const newSet = new Set(prev);
+            completedIds.forEach((id) => newSet.delete(id));
+            return newSet;
+          });
+        }
+      } catch (err) {
+        console.error("[Videos Tracking] Background polling failed:", err);
+      }
+    };
+
+    // Poll every 4 seconds
+    const intervalId = setInterval(pollStatuses, 4000);
+
+    // Cleanup on unmount or when downloadingItems becomes empty
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [downloadingItems]);
 
   const handleRefresh = () => {
     fetchItems(viewMode, selectedChannel, currentPage, itemsPerPage, { isManualRefresh: true, showLoading: false });
@@ -284,6 +358,10 @@ export function useVideoData({
   const handleDownload = useCallback(async (videoId: string, title: string) => {
     setDownloadingItems((prev) => new Set(prev).add(videoId));
     console.info(`[Videos Tracking] Action: Submitting download job for video: ${videoId}`);
+    
+    // Optimistic UI update: Immediately set status to PENDING so dropdown reflects it
+    setItems((prev) => prev.map((item) => item.videoId === videoId ? { ...item, status: "PENDING" } : item));
+    
     const toastId = toast.loading(`Submitting download job for "${title}"...`);
     const startTime = performance.now();
 
@@ -295,6 +373,10 @@ export function useVideoData({
         const message = `Successfully created ${createdTasksCount} download task(s).`;
         toast.success(message, { id: toastId });
         console.info(`[Videos Tracking] Download job submitted successfully in ${(performance.now() - startTime).toFixed(0)}ms.`);
+        
+        // Note: We deliberately DO NOT remove the videoId from downloadingItems here.
+        // The background polling engine (useEffect) will handle removing it once the backend status
+        // reaches a terminal state like DOWNLOADED or FAILED.
       } else {
         throw new Error("Failed to create download tasks. The server did not confirm task creation.");
       }
@@ -302,7 +384,9 @@ export function useVideoData({
       const message = err instanceof Error ? err.message : "An unknown error occurred while submitting the download job.";
       toast.error(`Download failed for "${title}": ${message}`, { id: toastId });
       console.error(`[Videos Tracking] Error submitting download for videoId ${videoId}:`, err);
-    } finally {
+      
+      // Revert optimistic update and remove from polling queue on error
+      setItems((prev) => prev.map((item) => item.videoId === videoId ? { ...item, status: "FAILED" } : item));
       setDownloadingItems((prev) => {
         const newSet = new Set(prev);
         newSet.delete(videoId);

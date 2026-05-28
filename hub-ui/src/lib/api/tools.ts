@@ -18,4 +18,7 @@ export const toolApi = {
   
   // 6. Reset unavailable thumbnails to PENDING
   resetUnavailableThumbnails: (videoIds?: string[]) => apiFetch("/tasks/reset-unavailable-thumbnails", { method: "PATCH", body: JSON.stringify({ videoIds }) }),
+
+  // 7. Ignore all pending thumbnails
+  ignoreAllPendingThumbnails: () => apiFetch("/tasks/ignore-all-pending-thumbnails", { method: "PATCH" }),
 };

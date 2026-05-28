@@ -20,7 +20,7 @@ export default function LoginPage() {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/videos";
+  const callbackUrl = searchParams.get("callbackUrl") || "/youtube/videos";
   const [state, formAction] = useActionState<State, FormData>(authenticate, {});
   // Removed displayError state as sonner will be used for error display
 
