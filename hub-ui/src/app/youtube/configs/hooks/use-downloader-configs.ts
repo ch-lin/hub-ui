@@ -18,6 +18,7 @@ export const downloaderConfigSchema = z.object({
   clientSecret: z.string().nullish().transform(v => v ?? ''),
   threadPoolSize: z.coerce.number().min(1, "Thread pool size must be at least 1"),
   maxQueueSize: z.coerce.number().min(1, "Max queue size must be at least 1"),
+  maxDownloadRetries: z.coerce.number().min(0, "Max download retries cannot be negative").default(3),
   ytDlpConfig: z.object({
     name: z.string().nullish().transform(v => v ?? ''),
     formatFiltering: z.string().min(1, "Format filtering is required"),
@@ -127,6 +128,7 @@ export function useDownloaderConfigs() {
       clientSecret: '',
       threadPoolSize: 3,
       maxQueueSize: 50,
+      maxDownloadRetries: 3,
       ytDlpConfig: {
         name: '',
         formatFiltering: 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
