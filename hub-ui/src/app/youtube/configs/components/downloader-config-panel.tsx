@@ -171,6 +171,10 @@ export function DownloaderConfigPanel({
               <Input type="number" {...register('maxQueueSize')} onWheel={(e) => (e.target as HTMLInputElement).blur()} />
               {errors.maxQueueSize && <p className="text-xs text-destructive mt-1">{errors.maxQueueSize.message}</p>}
             </Field>
+            <Field label="Max Download Retries">
+              <Input type="number" {...register('maxDownloadRetries')} onWheel={(e) => (e.target as HTMLInputElement).blur()} />
+              {errors.maxDownloadRetries && <p className="text-xs text-destructive mt-1">{errors.maxDownloadRetries.message}</p>}
+            </Field>
 
             <div className="col-span-1 md:col-span-2 border-t border-border my-2">
               <span className="text-sm font-bold text-muted-foreground bg-card pr-2 relative -top-3">yt-dlp Settings</span>
